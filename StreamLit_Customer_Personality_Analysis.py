@@ -11,6 +11,8 @@ from sklearn.preprocessing import LabelEncoder,StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from yellowbrick.cluster import KElbowVisualizer
+from bokeh.plotting import figure
+from bokeh.transform import factor_cmap
 
 np.random.seed(42)
 
@@ -22,15 +24,20 @@ from streamlit_pandas_profiling import st_profile_report
 import sys
 import os
 
-st.set_page_config(page_title="Streamlit_Customer_Personality_Analysis", page_icon="🎉",layout="wide")
+st.set_page_config(page_title="Streamlit_Customer_Personality_Analysis", page_icon="🎉",layout="centered")
 
 np.random.seed(42)
 
 #Side bar
 
+annotated_text(("Streamlit Customer Personality Analysis","🎉", ))
+
+
 with st.sidebar:
     st.title("Streamlit Customer Personality Analysis")
 
+
+st.image('douglas.jpg',width=600,use_column_width=True)
 
 st.header('Welcome to My Streamlit Web Application')
 st.markdown("""----""")
@@ -47,7 +54,7 @@ st.dataframe(df.describe())
 st.markdown("""----""")
 st.subheader('Display missing values of DataSet as a picture using missingno ')
 
-st.image('MissingValues.jpg',caption='Missing Values As a Picture',width=1100)
+st.image('MissingValues.jpg',caption='Missing Values As a Picture',width=900)
 st.write("As you can see we have some missing values in Income Column ")
 
 
@@ -238,7 +245,7 @@ st.plotly_chart(fig)
 
 
 
-
+st.markdown("""----""")
 if st.checkbox("Show Codes and comments"):
   
     # display the code in page
