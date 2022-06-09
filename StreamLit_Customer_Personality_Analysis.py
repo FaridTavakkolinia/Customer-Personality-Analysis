@@ -1,3 +1,4 @@
+from re import A
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -31,11 +32,210 @@ with st.sidebar:
     st.title("Streamlit Customer Personality Analysis")
 
 
-
-st.write('Welcome to My Streamlit Web Application')
+st.header('Welcome to My Streamlit Web Application')
+st.markdown("""----""")
+st.write('in This App we will be analysing the Customer Personality and will be able to predict the Customer behaviour and Create a clustring model')
 
 
 df = pd.read_csv("./data/marketing_campaign.csv",sep="\t")
+
+st.subheader("In the Below you can See the Dataset of the Customer Personalyty Analysis Head")
+st.dataframe(df.head())
+st.markdown("""----""")
+st.subheader("Describing the Dataset")
+st.dataframe(df.describe())
+st.markdown("""----""")
+st.subheader('Display missing values of DataSet as a picture using missingno ')
+
+st.image('MissingValues.jpg',caption='Missing Values As a Picture',width=1100)
+st.write("As you can see we have some missing values in Income Column ")
+
+
+#working on the data 
+
+
+df = df.dropna()
+
+
+df['Dt_Customer'] = df['Dt_Customer'].astype('datetime64[ns]')
+
+
+Membership_Period = []
+for i in df["Dt_Customer"]:
+    j = df["Dt_Customer"].max() - i
+    Membership_Period.append(j)
+
+df['Membership_Period'] = Membership_Period
+df['Membership_Period'] = pd.to_numeric(df['Membership_Period'].dt.days, downcast='integer')
+
+
+
+df["Marital_Status"].value_counts()
+
+df['Marital_Status'] = df['Marital_Status'].replace(['Married','Together'],'Couple')
+df['Marital_Status'] = df['Marital_Status'].replace(['Single','Divorced','Widow','Alone','Absurd','YOLO'],'Single')
+df["Marital_Status"].value_counts()
+
+df["Education"].value_counts()
+df['Education'] = df['Education'].replace(['PhD','Master'],'Postgraduate')
+df['Education'] = df['Education'].replace(['Graduation'],'Graduate')
+df['Education'] = df['Education'].replace(['2n Cycle','Basic'],'UnderGraduate')
+df["Education"].value_counts()
+
+
+column_names = ['MntWines', 'MntFruits', 'MntMeatProducts', 'MntFishProducts','MntSweetProducts','MntGoldProds']
+df['Total_Spent']= df[column_names].sum(axis=1)
+
+
+column_names_2 = ['Kidhome', 'Teenhome']
+df['Total_children'] = df[column_names_2].sum(axis=1)
+
+column_names_3 = ['AcceptedCmp3','AcceptedCmp4','AcceptedCmp5','AcceptedCmp1','AcceptedCmp2']
+df['Total_Cmp'] = df[column_names_3].sum(axis=1)
+
+column_names_4 = ['NumDealsPurchases', 'NumWebPurchases','NumCatalogPurchases', 'NumStorePurchases']
+df['Total_Purchases'] = df[column_names_4].sum(axis=1)
+
+
+family_size = []
+for i in df['Marital_Status']:
+    if i == 'Single':
+        family_size.append(1)
+    else:
+        family_size.append(2)
+df['Family_Size'] = family_size + df['Total_children']
+
+
+df["Age"] = 2022-df["Year_Birth"]
+
+drop = [ "Dt_Customer", "Z_CostContact", "Z_Revenue", "Year_Birth", "ID"]
+df = df.drop(drop, axis=1)
+
+df["Family"] = np.where(df.Total_children> 0, 1, 0)
+
+
+To_Plot = [ "Income", "Recency", "Education", "Age", "Total_Spent", "Family_Size","Membership_Period","Family"]
+
+
+df = df[(df["Age"]<90)]
+df = df[(df["Income"]<600000)]
+
+
+c = df.select_dtypes(include='object').columns
+
+
+labelencoder = LabelEncoder()
+df['Education'] = labelencoder.fit_transform(df['Education'])
+df['Marital_Status'] = labelencoder.fit_transform(df['Marital_Status'])
+
+
+
+df_2 = df.drop(columns=['Kidhome', 'Teenhome','AcceptedCmp3', 'AcceptedCmp4', 'AcceptedCmp5', 'AcceptedCmp1','AcceptedCmp2', 'Complain','NumDealsPurchases', 'NumWebPurchases',
+       'NumCatalogPurchases', 'NumStorePurchases'])
+
+
+
+scaler = StandardScaler()
+scaler.fit(df_2)
+df_2_scaled = pd.DataFrame(scaler.transform(df_2),columns= df_2.columns )
+
+
+corrmat= df_2_scaled.corr()
+plt.figure(figsize=(20,15))  
+sns.heatmap(corrmat,annot=True)
+
+pca = PCA(n_components=3)
+pca.fit(df_2_scaled)
+PCA_df_2_scaled = pd.DataFrame(pca.transform(df_2_scaled), columns=(["column_1","column_2", "column_3"]))
+
+
+
+kmeancluster = KMeans(n_clusters=4,random_state=42)
+PCA_df_2_scaled["Cluster"] = kmeancluster.fit_predict(PCA_df_2_scaled)
+
+
+
+labels = ['Cluster 1', 'Cluster 2', 'Cluster 3', 'Cluster 4']
+
+cluster1_val = PCA_df_2_scaled[PCA_df_2_scaled["Cluster"]==0].shape[0]
+cluster2_val = PCA_df_2_scaled[PCA_df_2_scaled["Cluster"]==1].shape[0]
+cluster3_val = PCA_df_2_scaled[PCA_df_2_scaled["Cluster"]==2].shape[0]
+cluster4_val = PCA_df_2_scaled[PCA_df_2_scaled["Cluster"]==3].shape[0]
+values = [cluster1_val, cluster2_val, cluster3_val, cluster4_val]
+
+
+
+
+
+
+#Plotly Histogram
+
+st.subheader("""Histogram of Age which seprated bye marital status""")
+fig = px.histogram(df, x="Age",color="Marital_Status", labels={"Age": "Age", "Marital_Status": "Marital Status"},height=500, width=1000)
+st.plotly_chart(fig)
+
+
+st.markdown("""----""")
+
+st.subheader("""Sccater plot of Income and Total Spent which size of dots increase by Family Size and seperated by Education""")
+
+fig = px.scatter(df, x="Income", y="Total_Spent",size="Family_Size",  color="Education" , height=500, width=1000,)
+st.plotly_chart(fig)
+
+
+
+
+with st.container():
+    st.markdown("""----""")
+    st.subheader("""Correlation matrix of all the features after scalling""")
+    corrmat= df_2_scaled.corr()
+    fig, ax = plt.subplots( figsize=(20,15))
+    sns.heatmap(corrmat,ax=ax,annot=True, cmap="RdBu_r",fmt='.2f')
+    st.pyplot(fig)
+
+
+st.markdown("""----""")
+st.subheader("""3D Scatter Plot of all """)
+fig = px.scatter_3d(PCA_df_2_scaled, x=PCA_df_2_scaled["column_1"], y=PCA_df_2_scaled["column_2"], z=PCA_df_2_scaled["column_3"],)
+st.plotly_chart(fig)
+
+
+with st.container():
+
+    st.markdown("""----""")
+    fig, ax = plt.subplots( figsize=(8,4))
+    sns.countplot(data=PCA_df_2_scaled, x="Cluster", palette="tab20")
+    plt.title("Cluster Distribution")
+    plt.xlabel("Cluster")
+    st.pyplot(fig)
+
+
+
+st.markdown("""----""")
+#Plot of Clusters
+with st.container():
+    fig, ax = plt.subplots( figsize=(8,4))
+    pl = sns.scatterplot(data = PCA_df_2_scaled,x=PCA_df_2_scaled["column_1"], y=PCA_df_2_scaled["column_2"],hue=PCA_df_2_scaled["Cluster"], palette="tab20")
+    pl.set_title("Cluster")
+    plt.legend()
+    st.pyplot(fig)
+
+
+
+st.markdown("""----""")
+with st.container():
+
+    fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole = 0.5, title="Clusters")]) # Create a pie chart
+    st.plotly_chart(fig)
+
+
+st.markdown("""----""")
+fig = px.scatter_3d(PCA_df_2_scaled,x=PCA_df_2_scaled["column_1"], y=PCA_df_2_scaled["column_2"],
+                    z=PCA_df_2_scaled["column_3"],color='Cluster')
+st.plotly_chart(fig)
+
+
+
 
 
 
@@ -241,126 +441,16 @@ fig.show()
     st.code(body,language='python')
 
 
-df = df.dropna()
 
-
-df['Dt_Customer'] = df['Dt_Customer'].astype('datetime64[ns]')
-
-
-Membership_Period = []
-for i in df["Dt_Customer"]:
-    j = df["Dt_Customer"].max() - i
-    Membership_Period.append(j)
-
-df['Membership_Period'] = Membership_Period
-df['Membership_Period'] = pd.to_numeric(df['Membership_Period'].dt.days, downcast='integer')
-
-
-
-df["Marital_Status"].value_counts()
-
-df['Marital_Status'] = df['Marital_Status'].replace(['Married','Together'],'Couple')
-df['Marital_Status'] = df['Marital_Status'].replace(['Single','Divorced','Widow','Alone','Absurd','YOLO'],'Single')
-df["Marital_Status"].value_counts()
-
-df["Education"].value_counts()
-
-df['Education'] = df['Education'].replace(['PhD','Master'],'Postgraduate')
-df['Education'] = df['Education'].replace(['Graduation'],'Graduate')
-df['Education'] = df['Education'].replace(['2n Cycle','Basic'],'UnderGraduate')
-df["Education"].value_counts()
-
-
-column_names = ['MntWines', 'MntFruits', 'MntMeatProducts', 'MntFishProducts','MntSweetProducts','MntGoldProds']
-df['Total_Spent']= df[column_names].sum(axis=1)
-
-
-column_names_2 = ['Kidhome', 'Teenhome']
-df['Total_children'] = df[column_names_2].sum(axis=1)
-
-column_names_3 = ['AcceptedCmp3','AcceptedCmp4','AcceptedCmp5','AcceptedCmp1','AcceptedCmp2']
-df['Total_Cmp'] = df[column_names_3].sum(axis=1)
-
-column_names_4 = ['NumDealsPurchases', 'NumWebPurchases','NumCatalogPurchases', 'NumStorePurchases']
-df['Total_Purchases'] = df[column_names_4].sum(axis=1)
-
-
-family_size = []
-for i in df['Marital_Status']:
-    if i == 'Single':
-        family_size.append(1)
-    else:
-        family_size.append(2)
-df['Family_Size'] = family_size + df['Total_children']
-
-
-df["Age"] = 2022-df["Year_Birth"]
-
-drop = [ "Dt_Customer", "Z_CostContact", "Z_Revenue", "Year_Birth", "ID"]
-df = df.drop(drop, axis=1)
-
-df["Family"] = np.where(df.Total_children> 0, 1, 0)
-
-
-To_Plot = [ "Income", "Recency", "Education", "Age", "Total_Spent", "Family_Size","Membership_Period","Family"]
-
-
-
-df = df[(df["Age"]<90)]
-df = df[(df["Income"]<600000)]
-
-
-c = df.select_dtypes(include='object').columns
-c
-
-labelencoder = LabelEncoder()
-df['Education'] = labelencoder.fit_transform(df['Education'])
-df['Marital_Status'] = labelencoder.fit_transform(df['Marital_Status'])
-
-
-
-df_2 = df.drop(columns=['Kidhome', 'Teenhome','AcceptedCmp3', 'AcceptedCmp4', 'AcceptedCmp5', 'AcceptedCmp1','AcceptedCmp2', 'Complain','NumDealsPurchases', 'NumWebPurchases',
-       'NumCatalogPurchases', 'NumStorePurchases'])
-
-
-
-scaler = StandardScaler()
-scaler.fit(df_2)
-df_2_scaled = pd.DataFrame(scaler.transform(df_2),columns= df_2.columns )
-df_2_scaled.info()
-
-df_2_scaled.head()
-
-corrmat= df_2_scaled.corr()
-plt.figure(figsize=(20,15))  
-sns.heatmap(corrmat,annot=True)
-
-pca = PCA(n_components=3)
-pca.fit(df_2_scaled)
-PCA_df_2_scaled = pd.DataFrame(pca.transform(df_2_scaled), columns=(["column_1","column_2", "column_3"]))
-PCA_df_2_scaled.describe().T
-
-
-kmeancluster = KMeans(n_clusters=4,random_state=42)
-PCA_df_2_scaled["Cluster"] = kmeancluster.fit_predict(PCA_df_2_scaled)
-
-
-
-labels = ['Cluster 1', 'Cluster 2', 'Cluster 3', 'Cluster 4']
-
-cluster1_val = PCA_df_2_scaled[PCA_df_2_scaled["Cluster"]==0].shape[0]
-cluster2_val = PCA_df_2_scaled[PCA_df_2_scaled["Cluster"]==1].shape[0]
-cluster3_val = PCA_df_2_scaled[PCA_df_2_scaled["Cluster"]==2].shape[0]
-cluster4_val = PCA_df_2_scaled[PCA_df_2_scaled["Cluster"]==3].shape[0]
-values = [cluster1_val, cluster2_val, cluster3_val, cluster4_val]
 
 
 if st.checkbox("Report of Clusters"):
     st.info("""
     This is a report created with pandas profiling, it will show you the dataframe's structure,
+    Please Wait...
     """)
 
-    pr = ProfileReport(PCA_df_2_scaled,minimal = True)
+    pr = ProfileReport(PCA_df_2_scaled, title="Pandas Profiling Report")
 
     st_profile_report(pr)
 
