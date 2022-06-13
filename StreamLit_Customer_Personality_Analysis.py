@@ -11,8 +11,7 @@ from sklearn.preprocessing import LabelEncoder,StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from yellowbrick.cluster import KElbowVisualizer
-from bokeh.plotting import figure
-from bokeh.transform import factor_cmap
+
 
 np.random.seed(42)
 
@@ -35,7 +34,9 @@ annotated_text(("Streamlit Customer Personality Analysis","🎉", ))
 
 with st.sidebar:
     st.title("Streamlit Customer Personality Analysis")
-
+    st.subheader("Farid Tavakkolinia")
+    st.subheader("Farid.Tavakkolinia@studenti.univr.it")
+    st.subheader("GitHub [link](https://github.com/FaridTavakkolinia/Customer-Personality-Analysis)")
 
 st.image('douglas.jpg',width=600,use_column_width=True)
 
@@ -210,6 +211,7 @@ st.plotly_chart(fig)
 with st.container():
 
     st.markdown("""----""")
+    st.write('In the blow plot we can see the distribution of clusters')
     fig, ax = plt.subplots( figsize=(8,4))
     sns.countplot(data=PCA_df_2_scaled, x="Cluster", palette="tab20")
     plt.title("Cluster Distribution")
@@ -221,6 +223,7 @@ with st.container():
 st.markdown("""----""")
 #Plot of Clusters
 with st.container():
+    st.write("Plot of Clusters")
     fig, ax = plt.subplots( figsize=(8,4))
     pl = sns.scatterplot(data = PCA_df_2_scaled,x=PCA_df_2_scaled["column_1"], y=PCA_df_2_scaled["column_2"],hue=PCA_df_2_scaled["Cluster"], palette="tab20")
     pl.set_title("Cluster")
@@ -231,12 +234,13 @@ with st.container():
 
 st.markdown("""----""")
 with st.container():
-
+    st.write("Pie Chart of Clusters")
     fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole = 0.5, title="Clusters")]) # Create a pie chart
     st.plotly_chart(fig)
 
 
 st.markdown("""----""")
+st.write("3D Scatter Plot of Clusters")
 fig = px.scatter_3d(PCA_df_2_scaled,x=PCA_df_2_scaled["column_1"], y=PCA_df_2_scaled["column_2"],
                     z=PCA_df_2_scaled["column_3"],color='Cluster')
 st.plotly_chart(fig)
