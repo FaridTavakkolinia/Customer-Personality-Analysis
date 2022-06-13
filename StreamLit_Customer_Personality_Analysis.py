@@ -34,9 +34,15 @@ annotated_text(("Streamlit Customer Personality Analysis","🎉", ))
 
 with st.sidebar:
     st.title("Streamlit Customer Personality Analysis")
+    
+    st.markdown("This app is a Streamlit app that uses the Streamlit framework to analyze the customer personality of a company.")
+    st.subheader("About:")
     st.subheader("Farid Tavakkolinia")
     st.subheader("Farid.Tavakkolinia@studenti.univr.it")
     st.subheader("GitHub [link](https://github.com/FaridTavakkolinia/Customer-Personality-Analysis)")
+
+    
+
 
 st.image('douglas.jpg',width=600,use_column_width=True)
 
